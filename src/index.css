@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.node-box {
+  background-color: #f8fafc;         /* light background */
+  border: 2px solid #3b82f6;         /* blue border */
+  color: #111827;                    /* dark text */
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-block;
+  box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.node-box:hover {
+  transform: scale(1.05);
+  background-color: #dbeafe;         /* hover blue tint */
+  border-color: #1d4ed8;
+  cursor: pointer;
+}
