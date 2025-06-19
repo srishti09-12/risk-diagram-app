@@ -33,21 +33,22 @@ allComponents.forEach((comp) => {
   assignedRisks[comp] = getRandomRisk();
 });
 
-function buildTree(node) {
+function buildTree(node, highlightNode = null) {
   const risk = assignedRisks[node] || 'low';
   const children = componentMap[node];
-  if (!children) return { name: node, risk };
+  if (!children) return { name: node, risk, glow: node === highlightNode };
   return {
     name: node,
     risk,
-    children: children.map(buildTree),
+    glow: node === highlightNode,
+    children: children.map((child) => buildTree(child, highlightNode)),
   };
 }
 
 const allNodes = new Set(Object.keys(componentMap));
 const childrenNodes = new Set(Object.values(componentMap).flat());
 const roots = [...allNodes].filter((n) => !childrenNodes.has(n));
-const fullTreeData = roots.map(buildTree);
+const fullTreeData = roots.map((r) => buildTree(r));
 
 export default function App() {
   const [treeData, setTreeData] = useState(
@@ -75,12 +76,13 @@ export default function App() {
     const risk = assignedRisks[term];
     if (risk === 'low' || risk === 'medium') {
       alert(`Component "${term}" has no effect on the system.`);
-    } else {
-      setTreeData(buildTree(term));
     }
+    const updatedTree = roots.map((r) => buildTree(r, term));
+    setTreeData(updatedTree.length === 1 ? updatedTree[0] : { name: 'Root', children: updatedTree });
+    const dimensions = containerRef.current.getBoundingClientRect();
+    setTranslate({ x: dimensions.width / 2, y: 100 });
     setSearchTerm('');
   };
-
   const handleReset = () => {
     setTreeData(fullTreeData.length === 1 ? fullTreeData[0] : { name: 'Root', children: fullTreeData });
   };
@@ -106,6 +108,7 @@ export default function App() {
       <g
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setHoveredNode(null)}
+        className={nodeDatum.glow ? 'node-glow' : ''}
       >
         <rect
           width={width}
@@ -126,9 +129,9 @@ export default function App() {
           x={0}
           y={5}
           textAnchor="middle"
-          style={{ userSelect: 'none', pointerEvents: 'none', fontWeight: 'bold' }}
+          style={{ userSelect: 'none', pointerEvents: 'none', fontWeight: 'bold', fontSize: '12px' }}
         >
-          {nodeDatum.name}
+          {nodeDatum.name.length > 10 ? nodeDatum.name.slice(0, 10) + '…' : nodeDatum.name}
         </text>
       </g>
     );
@@ -157,16 +160,19 @@ export default function App() {
           translate={translate}
           orientation="vertical"
           pathFunc="elbow"
-          collapsible
-          zoomable
-          initialDepth={2}
+          collapsible={true}
+          zoomable={true}
+          initialDepth={undefined}
           renderCustomNodeElement={renderNodeWithCustomRect}
-          styles={{ links: { stroke: '#888', strokeWidth: 2 } }}
+          styles={{
+            nodes: { node: { circle: { r: 10 } }, leafNode: { circle: { r: 10 } } },
+            links: { stroke: '#888', strokeWidth: 2 },
+          }}
         />
         {hoveredNode && dialogText && (
           <div
             className="hover-dialog"
-            style={{ top: `${hoverPosition.y}px`, left: `${hoverPosition.x}px` }}
+            style={{ top: `${hoverPosition.y}px`, left: `${hoverPosition.x}px` }} 
           >
             {dialogText}
           </div>
