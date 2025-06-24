@@ -1,24 +1,21 @@
-// App.js (updated to center node via translate calculation)
+// App.js (ServiceNow integration with secure backend proxy)
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Tree from 'react-d3-tree';
 import './App.css';
 import { allMaps } from './Structures';
 
-const riskLevels = ['high', 'medium', 'low'];
-const riskColors = {
-  high: '#e74c3c',
-  medium: '#f1c40f',
-  low: '#2ecc71'
+const statusColors = {
+  down: '#e74c3c',
+  incident: '#f1c40f',
+  maintenance: '#3498db',
+  healthy: '#2ecc71',
+  unknown: '#bdc3c7'
 };
 
-function getRandomRisk() {
-  return riskLevels[Math.floor(Math.random() * riskLevels.length)];
-}
-
-function generateTreeData(map, assignedRisks, highlightNode = null, expandPath = []) {
+function generateTreeData(map, statusMap, highlightNode = null, expandPath = []) {
   function buildTree(node, currentDepth = 0) {
-    const risk = assignedRisks[node] || 'low';
+    const risk = statusMap[node] || 'unknown';
     const children = map[node];
     const collapsed = expandPath.includes(node) ? false : currentDepth >= 2;
     if (!children) return { name: node, risk, glow: node === highlightNode };
@@ -60,11 +57,29 @@ function findPathToNode(map, target, current = null, path = []) {
   return [];
 }
 
+function debounce(fn, delay) {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+}
+
+async function fetchStatusFromBackend(name) {
+  try {
+    const res = await fetch(`/status/${encodeURIComponent(name)}`);
+    const json = await res.json();
+    return json.status || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 export default function App() {
   const [selectedMapName, setSelectedMapName] = useState(null);
   const [componentMap, setComponentMap] = useState(null);
   const [treeData, setTreeData] = useState(null);
-  const [assignedRisks, setAssignedRisks] = useState({});
+  const [statusMap, setStatusMap] = useState({});
   const [allComponents, setAllComponents] = useState(new Set());
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,17 +91,29 @@ export default function App() {
   const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
   const [dialogText, setDialogText] = useState(null);
   const [expandPath, setExpandPath] = useState([]);
+  const [loadingStatus, setLoadingStatus] = useState(false);
   const nodeRefMap = useRef({});
 
   useEffect(() => {
     if (!componentMap) return;
-    const allComps = new Set(Object.keys(componentMap).concat(...Object.values(componentMap)));
-    const riskMap = {};
-    allComps.forEach((c) => (riskMap[c] = getRandomRisk()));
-    setAssignedRisks(riskMap);
-    const { tree, allComponents } = generateTreeData(componentMap, riskMap, highlightNode, expandPath);
-    setTreeData(tree);
-    setAllComponents(allComponents);
+    const allComps = Array.from(new Set(Object.keys(componentMap).concat(...Object.values(componentMap))));
+
+    const fetchStatuses = debounce(async () => {
+      setLoadingStatus(true);
+      const results = {};
+      await Promise.all(
+        allComps.map(async (comp) => {
+          results[comp] = await fetchStatusFromBackend(comp);
+        })
+      );
+      setStatusMap(results);
+      const { tree, allComponents } = generateTreeData(componentMap, results, highlightNode, expandPath);
+      setTreeData(tree);
+      setAllComponents(new Set(allComps));
+      setLoadingStatus(false);
+    }, 300);
+
+    fetchStatuses();
   }, [componentMap, highlightNode, expandPath]);
 
   useEffect(() => {
@@ -99,7 +126,6 @@ export default function App() {
     if (highlightNode && nodeRefMap.current[highlightNode] && containerRef.current) {
       const container = containerRef.current;
       const nodeElement = nodeRefMap.current[highlightNode];
-
       const nodeBox = nodeElement.getBoundingClientRect();
       const containerBox = container.getBoundingClientRect();
 
@@ -155,7 +181,7 @@ export default function App() {
   const handleReset = () => {
     if (!componentMap) return;
     setHighlightNode(null);
-    const { tree } = generateTreeData(componentMap, assignedRisks);
+    const { tree } = generateTreeData(componentMap, statusMap);
     setTreeData(tree);
   };
 
@@ -163,15 +189,15 @@ export default function App() {
     const width = 120;
     const height = 40;
     const rectRadius = 6;
-    const fill = riskColors[nodeDatum.risk] || '#ccc';
+    const fill = statusColors[nodeDatum.risk] || '#bdc3c7';
     const handleMouseEnter = (e) => {
-      if (nodeDatum.risk === 'high') {
+      if (nodeDatum.risk === 'down') {
         const rect = containerRef.current.getBoundingClientRect();
         const x = Math.min(e.clientX - rect.left, rect.width - 260);
         const y = Math.max(e.clientY - rect.top - 40, 10);
         setHoveredNode(nodeDatum);
         setHoverPosition({ x, y });
-        setDialogText(`💬 ${nodeDatum.name} is causing instability due to deployment errors.`);
+        setDialogText(`🚨 ${nodeDatum.name} is DOWN.`);
       }
     };
     return (
@@ -224,6 +250,8 @@ export default function App() {
           <button type="button" onClick={handleReset} style={{ marginLeft: '10px' }}>Reset</button>
         </form>
       </div>
+
+      {loadingStatus && <div className="loading">🔄 Fetching application status from ServiceNow…</div>}
 
       {currentScreen === 'mapChooser' && (
         <div className="map-chooser">
