@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Tree from 'react-d3-tree';
 import './App.css';
+import { trees } from './Structures/treeData.js';
 
 const componentMap = {
   ULSHIP: ['AEAPS', 'ULDEC', 'DEPCT'],
@@ -14,6 +15,9 @@ const componentMap = {
   ULAPY_LOAD: ['ACAPS'],
   ACAPS: ['SHAW'],
   SHAW: ['EIW', 'BMG'],
+  EIW:['sri','thisNameisTooBIgForit'],
+  sri:['this','that'],
+  that:['this']
 };
 
 const riskLevels = ['high', 'medium', 'low'];
@@ -33,15 +37,17 @@ allComponents.forEach((comp) => {
   assignedRisks[comp] = getRandomRisk();
 });
 
-function buildTree(node, highlightNode = null) {
+function buildTree(node, highlightNode = null, currentDepth = 0) {
   const risk = assignedRisks[node] || 'low';
   const children = componentMap[node];
+  const collapsed = currentDepth >= 2; // Collapse all nodes below depth 2 initially
   if (!children) return { name: node, risk, glow: node === highlightNode };
   return {
     name: node,
     risk,
     glow: node === highlightNode,
-    children: children.map((child) => buildTree(child, highlightNode)),
+    collapsed,
+    children: children.map((child) => buildTree(child, highlightNode, currentDepth + 1)),
   };
 }
 
@@ -52,7 +58,7 @@ const fullTreeData = roots.map((r) => buildTree(r));
 
 export default function App() {
   const [treeData, setTreeData] = useState(
-    fullTreeData.length === 1 ? fullTreeData[0] : { name: 'Root', children: fullTreeData }
+    fullTreeData.length === 1 ? fullTreeData[0] : { name: 'Root', children: fullTreeData, collapsed: false }
   );
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [searchTerm, setSearchTerm] = useState('');
@@ -83,6 +89,7 @@ export default function App() {
     setTranslate({ x: dimensions.width / 2, y: 100 });
     setSearchTerm('');
   };
+
   const handleReset = () => {
     setTreeData(fullTreeData.length === 1 ? fullTreeData[0] : { name: 'Root', children: fullTreeData });
   };
@@ -155,6 +162,7 @@ export default function App() {
       </div>
 
       <div className="tree-container" ref={containerRef}>
+    
         <Tree
           data={treeData}
           translate={translate}
@@ -162,17 +170,19 @@ export default function App() {
           pathFunc="elbow"
           collapsible={true}
           zoomable={true}
-          initialDepth={undefined}
+          scaleExtent={{ min: 0.2, max: 1.2 }}
+          separation={{ siblings: 1.3, nonSiblings: 2.5 }}
           renderCustomNodeElement={renderNodeWithCustomRect}
           styles={{
             nodes: { node: { circle: { r: 10 } }, leafNode: { circle: { r: 10 } } },
-            links: { stroke: '#888', strokeWidth: 2 },
+            links: { stroke: '#ffffff', strokeWidth: 2 },
+            
           }}
         />
         {hoveredNode && dialogText && (
           <div
             className="hover-dialog"
-            style={{ top: `${hoverPosition.y}px`, left: `${hoverPosition.x}px` }} 
+            style={{ top: `${hoverPosition.y}px`, left: `${hoverPosition.x}px` }}
           >
             {dialogText}
           </div>
