@@ -11,3 +11,5 @@ export const componentMap= {
       ACAPS: ['SHAW'],
       SHAW: ['EIW', 'BMG']
     }
+
+export const mapDescription = 'ULAPY system architecture with fraud checks';

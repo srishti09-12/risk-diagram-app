@@ -1,6 +1,6 @@
-import { componentMap as map1 } from './map1.js';
-import { componentMap as map2 } from './map2.js';
-import { componentMap as map3 } from './map3.js';
+import * as map1 from './map1';
+import * as map2 from './map2';
+import * as map3 from './map3';
 
 export const allMaps = {
   Map1: map1,

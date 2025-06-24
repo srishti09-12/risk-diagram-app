@@ -6,3 +6,5 @@ export const componentMap = {
   sri:['this','that'],
   that:['this']
 };
+
+export const mapDescription = 'ULAPY system architecture with fraud checks';

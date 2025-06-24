@@ -11,3 +11,4 @@ export const componentMap= {
       ACAPS: ['SHAW'],
       SHAW: ['EIW', 'BMG']
     }
+    export const mapDescription = 'ULSHIP and its downstream dependencies';
