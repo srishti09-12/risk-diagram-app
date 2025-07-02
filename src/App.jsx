@@ -55,6 +55,9 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('main');
   const [searchResults, setSearchResults] = useState([]);
   const [highlightNode, setHighlightNode] = useState(null);
+  const [hoveredNode, setHoveredNode] = useState(null);
+  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+  const [dialogText, setDialogText] = useState('');
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -68,7 +71,7 @@ export default function App() {
         })
       );
       setStatusMap(results);
-      const { tree, allComponents } = generateTreeData(componentMap, results, highlightNode);
+      const { tree } = generateTreeData(componentMap, results, highlightNode);
       setTreeData(tree);
     };
     fetchStatuses();
@@ -110,6 +113,7 @@ export default function App() {
   const handleReset = () => {
     if (!componentMap) return;
     setHighlightNode(null);
+    setHoveredNode(null);
     const { tree } = generateTreeData(componentMap, statusMap);
     setTreeData(tree);
   };
@@ -120,8 +124,40 @@ export default function App() {
     const rectRadius = 6;
     const fill = statusColors[nodeDatum.risk] || '#bdc3c7';
 
+    const handleMouseEnter = (e) => {
+      if (nodeDatum.risk === 'unknown') {
+        const rect = containerRef.current.getBoundingClientRect();
+        setHoveredNode(nodeDatum);
+        setDialogText(`💬 ${nodeDatum.name} is causing instability due to backend errors.`);
+        setHoverPosition({
+          x: e.clientX - rect.left + 10,
+          y: e.clientY - rect.top + 10
+        });
+      }
+    };
+
+    const handleMouseMove = (e) => {
+      if (nodeDatum.risk === 'unknown') {
+        const rect = containerRef.current.getBoundingClientRect();
+        setHoverPosition({
+          x: e.clientX - rect.left + 10,
+          y: e.clientY - rect.top + 10
+        });
+      }
+    };
+
+    const handleMouseLeave = () => {
+      setHoveredNode(null);
+      setDialogText('');
+    };
+
     return (
-      <g className={nodeDatum.glow ? 'node-glow' : ''}>
+      <g
+        className={nodeDatum.glow ? 'node-glow' : ''}
+        onMouseEnter={handleMouseEnter}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
         <rect
           width={width}
           height={height}
@@ -140,7 +176,12 @@ export default function App() {
           x={0}
           y={5}
           textAnchor="middle"
-          style={{ userSelect: 'none', pointerEvents: 'none', fontWeight: '400', fontSize: '12px' }}
+          style={{
+            userSelect: 'none',
+            pointerEvents: 'none',
+            fontWeight: '400',
+            fontSize: '12px'
+          }}
         >
           {nodeDatum.name.length > 10 ? nodeDatum.name.slice(0, 10) + '…' : nodeDatum.name}
         </text>
@@ -164,17 +205,20 @@ export default function App() {
       </div>
 
       {currentScreen === 'mapChooser' && (
-        <div className="map-chooser">
-          <h3>Component found in multiple maps:</h3>
-          <ul>
-            {searchResults.map(({ name, description }) => (
-              <li key={name} style={{ marginBottom: '1em' }}>
-                <strong>{name}</strong>: {description}<br />
-                <button onClick={() => handleMapChoice(name)}>View this Map</button>
-              </li>
-            ))}
-          </ul>
+  <div className="map-chooser-card">
+    <h2>🔍 Component Found in Multiple Maps</h2>
+    <div className="map-list">
+      {searchResults.map(({ name, description }) => (
+        <div key={name} className="map-item">
+          <div className="map-title">{name}</div>
+          <div className="map-description">{description}</div>
+          <button className="view-map-btn" onClick={() => handleMapChoice(name)}>
+            View Map
+          </button>
         </div>
+      ))}
+    </div>
+  </div>
       )}
 
       {currentScreen === 'viewer' && treeData && (
@@ -186,9 +230,9 @@ export default function App() {
             pathFunc="elbow"
             collapsible={false}
             zoomable={false}
-            panOnScroll={false}              // Prevent scroll panning
-            panOnDrag={false}                // Prevent mouse dragging
-            enableLegacyTransitions={false} 
+            panOnScroll={false}
+            panOnDrag={false}
+            enableLegacyTransitions={false}
             scaleExtent={{ min: 1, max: 1 }}
             separation={{ siblings: 0.4, nonSiblings: 0.6 }}
             renderCustomNodeElement={renderNodeWithCustomRect}
@@ -197,6 +241,19 @@ export default function App() {
               links: { stroke: '#ccc', strokeWidth: 1.5 }
             }}
           />
+
+          {hoveredNode && (
+            <div
+              className="hover-dialog"
+              style={{
+                position: 'absolute',
+                left: hoverPosition.x,
+                top: hoverPosition.y
+              }}
+            >
+              {dialogText}
+            </div>
+          )}
         </div>
       )}
     </div>

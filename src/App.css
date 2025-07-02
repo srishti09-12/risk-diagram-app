@@ -1,12 +1,10 @@
-/* Global reset and base styles */
 body, html {
   margin: 0;
   padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #05325f;
   height: 100%;
   width: 100%;
-  background-color: #6677c0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #fff;
   overflow: hidden;
 }
 
@@ -14,59 +12,137 @@ body, html {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100vw;
-  background-color: #6677c0;
 }
 
-/* Search bar styling */
 .search-bar {
-  padding: 1rem;
-  background-color: #1f2233;
+  padding: 12px 24px;
+  background-color: #1e1e2f;
   display: flex;
-  justify-content: center;
-  border-bottom: 1px solid #333;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+}
+
+.search-bar form {
+  display: flex;
+  gap: 10px;
+  width: 100%;
 }
 
 .search-bar input {
-  padding: 0.5rem;
-  font-size: 1rem;
-  margin-right: 0.5rem;
-  width: 300px;
-  border: none;
+  flex: 1;
+  padding: 8px 12px;
   border-radius: 6px;
+  border: none;
+  font-size: 14px;
 }
 
 .search-bar button {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  border: none;
-  border-radius: 6px;
-  background-color: #4448ff;
+  background-color: #0e76a8;
   color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
   cursor: pointer;
+  transition: 0.3s;
 }
 
 .search-bar button:hover {
-  background-color: #0056b3;
+  background-color: #095c87;
+}
+
+.tree-container {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  background-color: #ffffff;
+}
+
+.map-chooser-card {
+  background-color: #ffffff;
+  padding: 30px;
+  margin: 30px auto;
+  border-radius: 12px;
+  max-width: 700px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.map-chooser-card h2 {
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: #2c3e50;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.map-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.map-item {
+  background: #f9fafc;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 15px 20px;
+  transition: box-shadow 0.2s ease;
+}
+
+.map-item:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.map-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #34495e;
+  margin-bottom: 4px;
+}
+
+.map-description {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin-bottom: 10px;
+}
+
+.view-map-btn {
+  background-color: #3498db;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.view-map-btn:hover {
+  background-color: #2980b9;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Tree container with full scrollability */
 .tree-container {
   flex: 1;
-  overflow: hidden;
-  background-color: #0cd1f4;
+  overflow: auto;
+  background-color: #05325f;
   position: relative;
   width: 100%;
   padding-top: 20px; /* Push tree down below search bar */
 }
 
-.tree-container > svg {
-  pointer-events: none; /* Prevents SVG dragging */
-}
 
-.tree-container > svg g {
-  pointer-events: auto; /* Allow nodes to still be clickable */
-}
 /* Node highlight effect */
 .node-glow rect {
   animation: blink 1s infinite;
