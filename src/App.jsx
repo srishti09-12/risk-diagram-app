@@ -1,5 +1,3 @@
-// App.js (ServiceNow integration with secure backend proxy)
-
 import React, { useState, useEffect, useRef } from 'react';
 import Tree from 'react-d3-tree';
 import './App.css';
@@ -13,17 +11,16 @@ const statusColors = {
   unknown: '#bdc3c7'
 };
 
-function generateTreeData(map, statusMap, highlightNode = null, expandPath = []) {
+function generateTreeData(map, statusMap, highlightNode = null) {
   function buildTree(node, currentDepth = 0) {
     const risk = statusMap[node] || 'unknown';
     const children = map[node];
-    const collapsed = expandPath.includes(node) ? false : currentDepth >= 2;
     if (!children) return { name: node, risk, glow: node === highlightNode };
     return {
       name: node,
       risk,
       glow: node === highlightNode,
-      collapsed,
+      collapsed: false,
       children: children.map((child) => buildTree(child, currentDepth + 1))
     };
   }
@@ -36,32 +33,6 @@ function generateTreeData(map, statusMap, highlightNode = null, expandPath = [])
   return {
     tree: fullTreeData.length === 1 ? fullTreeData[0] : { name: 'Root', children: fullTreeData },
     allComponents: new Set([...allNodes, ...childrenNodes])
-  };
-}
-
-function findPathToNode(map, target, current = null, path = []) {
-  if (current === null) {
-    const roots = Object.keys(map).filter(k => !Object.values(map).flat().includes(k));
-    for (let root of roots) {
-      const result = findPathToNode(map, target, root, []);
-      if (result.length > 0) return result;
-    }
-    return [];
-  }
-  if (current === target) return [...path, current];
-  const children = map[current] || [];
-  for (let child of children) {
-    const result = findPathToNode(map, target, child, [...path, current]);
-    if (result.length > 0) return result;
-  }
-  return [];
-}
-
-function debounce(fn, delay) {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => fn(...args), delay);
   };
 }
 
@@ -80,26 +51,16 @@ export default function App() {
   const [componentMap, setComponentMap] = useState(null);
   const [treeData, setTreeData] = useState(null);
   const [statusMap, setStatusMap] = useState({});
-  const [allComponents, setAllComponents] = useState(new Set());
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentScreen, setCurrentScreen] = useState('main');
   const [searchResults, setSearchResults] = useState([]);
   const [highlightNode, setHighlightNode] = useState(null);
   const containerRef = useRef(null);
-  const [hoveredNode, setHoveredNode] = useState(null);
-  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
-  const [dialogText, setDialogText] = useState(null);
-  const [expandPath, setExpandPath] = useState([]);
-  const [loadingStatus, setLoadingStatus] = useState(false);
-  const nodeRefMap = useRef({});
 
   useEffect(() => {
     if (!componentMap) return;
     const allComps = Array.from(new Set(Object.keys(componentMap).concat(...Object.values(componentMap))));
-
-    const fetchStatuses = debounce(async () => {
-      setLoadingStatus(true);
+    const fetchStatuses = async () => {
       const results = {};
       await Promise.all(
         allComps.map(async (comp) => {
@@ -107,39 +68,11 @@ export default function App() {
         })
       );
       setStatusMap(results);
-      const { tree, allComponents } = generateTreeData(componentMap, results, highlightNode, expandPath);
+      const { tree, allComponents } = generateTreeData(componentMap, results, highlightNode);
       setTreeData(tree);
-      setAllComponents(new Set(allComps));
-      setLoadingStatus(false);
-    }, 300);
-
+    };
     fetchStatuses();
-  }, [componentMap, highlightNode, expandPath]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const dimensions = containerRef.current.getBoundingClientRect();
-    setTranslate({ x: dimensions.width / 2, y: 60 });
-  }, [currentScreen]);
-
-  useEffect(() => {
-    if (highlightNode && nodeRefMap.current[highlightNode] && containerRef.current) {
-      const container = containerRef.current;
-      const nodeElement = nodeRefMap.current[highlightNode];
-      const nodeBox = nodeElement.getBoundingClientRect();
-      const containerBox = container.getBoundingClientRect();
-
-      const offsetX = nodeBox.left + nodeBox.width / 2 - containerBox.left;
-      const offsetY = nodeBox.top + nodeBox.height / 2 - containerBox.top;
-
-      const newTranslate = {
-        x: translate.x - (offsetX - containerBox.width / 2),
-        y: translate.y - (offsetY - containerBox.height / 2),
-      };
-
-      setTranslate(newTranslate);
-    }
-  }, [treeData, highlightNode]);
+  }, [componentMap, highlightNode]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -158,8 +91,6 @@ export default function App() {
       const name = matches[0].name;
       setSelectedMapName(name);
       setComponentMap(allMaps[name].componentMap);
-      const path = findPathToNode(allMaps[name].componentMap, term);
-      setExpandPath(path);
       setHighlightNode(term);
       setCurrentScreen('viewer');
     } else {
@@ -171,10 +102,8 @@ export default function App() {
   };
 
   const handleMapChoice = (name) => {
-    const path = findPathToNode(allMaps[name].componentMap, highlightNode);
     setSelectedMapName(name);
     setComponentMap(allMaps[name].componentMap);
-    setExpandPath(path);
     setCurrentScreen('viewer');
   };
 
@@ -185,30 +114,14 @@ export default function App() {
     setTreeData(tree);
   };
 
-  const renderNodeWithCustomRect = ({ nodeDatum, toggleNode }) => {
+  const renderNodeWithCustomRect = ({ nodeDatum }) => {
     const width = 120;
     const height = 40;
     const rectRadius = 6;
     const fill = statusColors[nodeDatum.risk] || '#bdc3c7';
-    const handleMouseEnter = (e) => {
-      if (nodeDatum.risk === 'down') {
-        const rect = containerRef.current.getBoundingClientRect();
-        const x = Math.min(e.clientX - rect.left, rect.width - 260);
-        const y = Math.max(e.clientY - rect.top - 40, 10);
-        setHoveredNode(nodeDatum);
-        setHoverPosition({ x, y });
-        setDialogText(`🚨 ${nodeDatum.name} is DOWN.`);
-      }
-    };
+
     return (
-      <g
-        ref={(el) => {
-          if (el) nodeRefMap.current[nodeDatum.name] = el;
-        }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setHoveredNode(null)}
-        className={nodeDatum.glow ? 'node-glow' : ''}
-      >
+      <g className={nodeDatum.glow ? 'node-glow' : ''}>
         <rect
           width={width}
           height={height}
@@ -220,7 +133,6 @@ export default function App() {
           rx={rectRadius}
           ry={rectRadius}
           style={{ cursor: 'pointer' }}
-          onClick={toggleNode}
         />
         <text
           fill="#000"
@@ -228,7 +140,7 @@ export default function App() {
           x={0}
           y={5}
           textAnchor="middle"
-          style={{ userSelect: 'none', pointerEvents: 'none', fontWeight: 'bold', fontSize: '12px' }}
+          style={{ userSelect: 'none', pointerEvents: 'none', fontWeight: '400', fontSize: '12px' }}
         >
           {nodeDatum.name.length > 10 ? nodeDatum.name.slice(0, 10) + '…' : nodeDatum.name}
         </text>
@@ -247,11 +159,9 @@ export default function App() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <button type="submit">Search</button>
-          <button type="button" onClick={handleReset} style={{ marginLeft: '10px' }}>Reset</button>
+          <button type="button" onClick={handleReset}>Reset</button>
         </form>
       </div>
-
-      {loadingStatus && <div className="loading">🔄 Fetching application status from ServiceNow…</div>}
 
       {currentScreen === 'mapChooser' && (
         <div className="map-chooser">
@@ -271,24 +181,22 @@ export default function App() {
         <div className="tree-container" ref={containerRef}>
           <Tree
             data={treeData}
-            translate={translate}
-            orientation="vertical"
+            orientation="horizontal"
+            translate={{ x: 100, y: 400 }}
             pathFunc="elbow"
-            collapsible={true}
-            zoomable={true}
-            scaleExtent={{ min: 0.2, max: 1.2 }}
-            separation={{ siblings: 1.3, nonSiblings: 2.5 }}
+            collapsible={false}
+            zoomable={false}
+            panOnScroll={false}              // Prevent scroll panning
+            panOnDrag={false}                // Prevent mouse dragging
+            enableLegacyTransitions={false} 
+            scaleExtent={{ min: 1, max: 1 }}
+            separation={{ siblings: 0.4, nonSiblings: 0.6 }}
             renderCustomNodeElement={renderNodeWithCustomRect}
             styles={{
               nodes: { node: { circle: { r: 10 } }, leafNode: { circle: { r: 10 } } },
-              links: { stroke: '#ffffff', strokeWidth: 2 }
+              links: { stroke: '#ccc', strokeWidth: 1.5 }
             }}
           />
-          {hoveredNode && dialogText && (
-            <div className="hover-dialog" style={{ top: `${hoverPosition.y}px`, left: `${hoverPosition.x}px` }}>
-              {dialogText}
-            </div>
-          )}
         </div>
       )}
     </div>

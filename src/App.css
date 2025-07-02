@@ -1,82 +1,24 @@
+/* Global reset and base styles */
 body, html {
   margin: 0;
   padding: 0;
+  height: 100%;
+  width: 100%;
+  background-color: #6677c0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #fff;
   overflow: hidden;
-  background-color: #f4f7fa;
-  font-family: sans-serif;
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  background-color: #f4f7fa;
   height: 100vh;
   width: 100vw;
-  overflow: hidden;
-}
-
-.search-bar {
-  padding: 12px 20px;
-  background-color: #fff;
-  border-bottom: 1px solid #ccc;
-  width: 100%;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  display: flex;
-  justify-content: center;
-}
-
-.search-bar input {
-  padding: 8px 12px;
-  font-size: 14px;
-  width: 250px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  margin-right: 10px;
-}
-
-.search-bar button {
-  padding: 8px 14px;
-  font-size: 14px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.search-bar button:hover {
-  background-color: #0056b3;
-}
-
-.tree-container {
-  flex: 1;
-  width: 100%;
-  position: relative;
-}
-
-.hover-dialog {
-  position: absolute;
-  background-color: #ffffff;
-  border: 1px solid #ccc;
-  padding: 10px 14px;
-  font-size: 13px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  z-index: 100;
-  max-width: 250px;
-  pointer-events: none;
-}
-.app-container {
-  height: 100vh;
-  width: 100%;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #6677c0;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
 }
 
+/* Search bar styling */
 .search-bar {
   padding: 1rem;
   background-color: #1f2233;
@@ -104,12 +46,40 @@ body, html {
   cursor: pointer;
 }
 
-.tree-container {
-  flex: 1;
-  overflow: auto;
-  position: relative;
+.search-bar button:hover {
+  background-color: #0056b3;
 }
 
+/* Tree container with full scrollability */
+.tree-container {
+  flex: 1;
+  overflow: hidden;
+  background-color: #0cd1f4;
+  position: relative;
+  width: 100%;
+  padding-top: 20px; /* Push tree down below search bar */
+}
+
+.tree-container > svg {
+  pointer-events: none; /* Prevents SVG dragging */
+}
+
+.tree-container > svg g {
+  pointer-events: auto; /* Allow nodes to still be clickable */
+}
+/* Node highlight effect */
+.node-glow rect {
+  animation: blink 1s infinite;
+  stroke: #fff;
+  stroke-width: 3px;
+}
+
+@keyframes blink {
+  0%, 100% { stroke: #fff; }
+  50% { stroke: #ff0000; }
+}
+
+/* Hover dialog tooltip */
 .hover-dialog {
   position: absolute;
   background-color: #181818;
@@ -120,15 +90,22 @@ body, html {
   font-size: 0.9rem;
   max-width: 250px;
   z-index: 10;
+  pointer-events: none;
 }
 
-.node-glow rect {
-  animation: blink 1s infinite;
-  stroke: #fff;
-  stroke-width: 3px;
+/* Optional: Map chooser or loading styles */
+.map-chooser {
+  padding: 20px;
+  color: #fff;
 }
 
-@keyframes blink {
-  0%, 100% { stroke: #fff; }
-  50% { stroke: #ff0000; }
+.map-chooser ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.loading {
+  text-align: center;
+  padding: 1rem;
+  font-weight: bold;
 }
