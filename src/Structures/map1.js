@@ -1,5 +1,5 @@
 export const componentMap= {
-      ULSHIP: ['AEAPS', 'ULDEC', 'DEPCT'],
+      ULSHP: ['AEAPS', 'ULDEC', 'DEPCT'],
       ULDEC: ['ULDEC_PRICING', 'UMGM'],
       DEPCT: ['CMBS1', 'CORD', 'FICO_DMP'],
       ULAPY: ['ULDEC2', 'FRIES'],
