@@ -18,31 +18,24 @@ const statusColors = {
   unknown: '#bdc3c7',
 };
 
-const CustomNode = ({ data, id }) => {
+const CustomNode = ({ data }) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  const tooltipRef = useRef(null);
-
-  const handleMouseEnter = () => {
-    setShowTooltip(true);
-  };
-
-  const handleMouseLeave = () => {
-    setShowTooltip(false);
-  };
 
   return (
     <div
       style={{
+        display: 'flex',
+        alignItems: 'center',
         position: 'relative',
-        textAlign: 'center',
-        width: 80,
-        color: 'white', // 👈 white text
+        color: 'white',
+        gap: '10px',
       }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
     >
       <Handle type="target" position={Position.Left} />
-      
+
+      {/* Circle */}
       <div
         style={{
           width: 50,
@@ -50,16 +43,18 @@ const CustomNode = ({ data, id }) => {
           borderRadius: '50%',
           backgroundColor: data.color,
           border: '2px solid #222',
-          margin: '0 auto',
-          boxShadow: data.glow ? '0 0 10px 4px gold' : 'none', // 🔥 glow effect
+          boxShadow: data.glow ? '0 0 10px 4px gold' : 'none',
         }}
-      ></div>
+      />
 
-      <div style={{ fontSize: 24, marginTop: 4 }}>{data.label}</div>
+      {/* Label on Right */}
+      <div style={{ fontSize: 14, fontWeight: 'bold', color: 'white' }}>
+        {data.label}
+      </div>
 
+      {/* Tooltip above the node */}
       {showTooltip && (
         <div
-          ref={tooltipRef}
           style={{
             position: 'absolute',
             top: -40,
@@ -67,9 +62,10 @@ const CustomNode = ({ data, id }) => {
             transform: 'translateX(-50%)',
             backgroundColor: '#222',
             color: 'white',
-            padding: '4px 8px',
+            padding: '6px 10px',
             borderRadius: 4,
-            fontSize: 24,
+            fontSize: 14,
+            fontWeight: 'bold',
             whiteSpace: 'nowrap',
             zIndex: 100,
           }}
@@ -82,6 +78,7 @@ const CustomNode = ({ data, id }) => {
     </div>
   );
 };
+
 
 function buildGraph(componentMap, statusMap, highlightNode = null, setTooltipData) {
   const nodes = [];
